@@ -7,6 +7,8 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import java.time.Duration;
+
 @SpringBootTest
 public class ServicioTest {
 
@@ -22,5 +24,42 @@ public class ServicioTest {
     void testVarios() {
         Flux<String> uno = servicio.buscarTodos();
         StepVerifier.create(uno).expectNext("Pedro").expectNext("Maria").expectNext("Jesus").expectNext("Carmen").verifyComplete();
+    }
+
+    @Test
+    void testVariosLento() {
+        Flux<String> uno = servicio.buscarTodosLento();
+        StepVerifier.create(uno)
+                .expectNext("Pedro")
+                .thenAwait(Duration.ofSeconds(1))
+                .expectNext("Maria")
+                .thenAwait(Duration.ofSeconds(1))
+                .expectNext("Jesus")
+                .thenAwait(Duration.ofSeconds(1))
+                .expectNext("Carmen")
+                .thenAwait(Duration.ofSeconds(1)).verifyComplete();
+    }
+
+    @Test
+    void testTodosFiltro() {
+        Flux<String> source = servicio.buscarTodosFiltro();
+        StepVerifier
+                .create(source)
+                .expectNext("JOHN")
+                .expectNextMatches(name -> name.startsWith("MA"))
+                .expectNext("CLOE", "CATE")
+                .expectComplete()
+                .verify();
+    }
+
+    @Test
+    void verificarEstadoAdicional(){
+        Flux<Integer> source = servicio.verificarEstadoAdicional();
+        StepVerifier.create(source)
+                .expectNext(2)
+                .expectComplete()
+                .verifyThenAssertThat()
+                .hasDropped(4)
+                .tookLessThan(Duration.ofMillis(1050));
     }
 }
